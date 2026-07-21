@@ -10,7 +10,7 @@ types it wherever the cursor is — comparable to Wispr Flow. Three triggers fee
 one shared pipeline:
 
 - **Ctrl+B** — hold (walkie-talkie): record while held, transcribe on release.
-- **Ctrl+N** — toggle: tap to start, tap again to stop and transcribe.
+- **Alt+N** — toggle: tap to start, tap again to stop and transcribe.
 - **"Hey PC"** — hands-free wake word: detect the phrase, record until you stop
   talking, transcribe.
 
@@ -23,10 +23,10 @@ assistant, no command execution — pure dictation. Runs 100% locally.
 |---|---|---|
 | Architecture | Python background/tray app | Fastest to build, easy to iterate, all triggers share one codebase. |
 | Transcription engine | **faster-whisper** (CTranslate2) | Pure `pip install`, no C++ compiler/build needed; prebuilt wheels; strong CPU performance; same OpenAI Whisper models. |
-| Model | English-only (`base.en` default, `small.en` optional) | User dictates in English only; `.en` models are faster + more accurate on the target CPU. |
+| Model | English-only **`small.en`** | User prioritizes quality; `small.en` is noticeably more accurate than `base.en` and remains workable on the target CPU for push-to-talk. |
 | Warm model | Model loaded once, kept in RAM | Avoids per-utterance reload latency; snappy dictation. |
 | Ctrl+B | Hold / walkie-talkie | User preference. |
-| Ctrl+N | Toggle on/off | User preference. |
+| Alt+N | Toggle on/off | User preference. |
 | Wake word | **openWakeWord**, ready-made phrase first | Fully offline + open source. Custom "Hey PC" model deferred to a later step. |
 | Text injection | Clipboard paste (save → set → Ctrl+V → restore) | Most reliable across all apps (Word, browser, terminal, chat). |
 | Feedback | System-tray icon + optional beeps | Clear recording state, low intrusion. |
@@ -60,7 +60,7 @@ Isolated single-purpose components communicating through well-defined interfaces
 
 4. **`triggers`** — Three producers, one internal command queue:
    - **Hotkey listener** (`keyboard` lib): Ctrl+B key-down → start-hold-recording,
-     key-up → stop; Ctrl+N press → toggle recording state.
+     key-up → stop; Alt+N press → toggle recording state.
    - **Wake-word listener** (openWakeWord, background thread): consumes idle mic
      frames; on detection, starts a recording session with silence endpointing.
    - Emits a uniform `StartRecording(mode)` / `StopRecording` signal set.
@@ -87,7 +87,7 @@ Isolated single-purpose components communicating through well-defined interfaces
 idle → wake-word listener running on shared mic stream
   │
   ├─ Ctrl+B held ─────► record while held ──────────┐
-  ├─ Ctrl+N tapped ───► record until re-tap ────────┼─► engine.transcribe (warm)
+  ├─ Alt+N tapped ────► record until re-tap ────────┼─► engine.transcribe (warm)
   └─ "Hey PC" heard ──► record until trailing silence ┘        │
                                                                ▼
                                           inject.paste_at_cursor(text) → idle
@@ -102,7 +102,7 @@ Invariants:
 
 - `faster-whisper` — transcription
 - `sounddevice` (+ `numpy`) — mic capture
-- `keyboard` — global hotkeys (Ctrl+B / Ctrl+N)
+- `keyboard` — global hotkeys (Ctrl+B / Alt+N)
 - `openwakeword` — wake-word detection
 - `pyperclip` — clipboard get/set
 - `pystray` + `Pillow` — tray icon
@@ -135,5 +135,5 @@ implementation.
 - Confirm whether `keyboard` needs Administrator elevation on this machine.
 - Pick the default ready-made openWakeWord phrase (e.g. "Hey Jarvis") and expose
   it in config so it's easy to swap.
-- Choose default model: `base.en` (faster) vs `small.en` (more accurate) — start
-  with `base.en`, make it a one-line config change.
+- Default model is `small.en` (quality priority). If a sentence feels too slow to
+  transcribe on this CPU, `base.en` is a one-line config fallback.
