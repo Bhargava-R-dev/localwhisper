@@ -23,8 +23,8 @@ class Config:
     wakeword_threshold: float = 0.5
 
     # Endpointing (hands-free / wake-word path only)
-    endpoint_silence_ms: int = 1500    # stop after this much trailing silence
-    max_record_ms: int = 15000         # safety cap for hands-free utterances (no key to release)
+    endpoint_silence_ms: int = 1500    # PRIMARY stop for hands-free: stop after this much trailing silence
+    max_record_ms: int = 120000        # runaway safety cap only (2 min); silence normally stops it first
     energy_threshold: float = 0.01     # RMS above this = speech
 
     # Push-to-talk safety cap (hold/toggle end on the key/tap, not this — this is just a runaway guard)
