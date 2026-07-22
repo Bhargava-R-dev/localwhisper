@@ -9,3 +9,4 @@ dist/
 packaging/_model/
 *.spec
 dist_pypi/
+*.egg-info/

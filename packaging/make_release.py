@@ -54,8 +54,12 @@ def main():
 
     print("Copying app...")
     shutil.copytree(DIST_APP, os.path.join(STAGE, "LocalWhisper"))
-    shutil.copy2(os.path.join(INSTALLER, "Install.bat"), STAGE)
-    shutil.copy2(os.path.join(INSTALLER, "Uninstall.bat"), STAGE)
+    for bat in ("Install.bat", "Uninstall.bat"):
+        # Batch files must use CRLF line endings to be safe on cmd.exe.
+        with open(os.path.join(INSTALLER, bat), "r", encoding="utf-8") as fh:
+            text = fh.read().replace("\r\n", "\n").replace("\n", "\r\n")
+        with open(os.path.join(STAGE, bat), "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
     with open(os.path.join(STAGE, "README.txt"), "w", encoding="utf-8") as fh:
         fh.write(README_TXT)
 
