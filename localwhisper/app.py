@@ -7,6 +7,7 @@ locked) can never kill the hotkeys or wake word until the app is restarted.
 import os
 import queue
 import sys
+import time
 import traceback
 
 import numpy as np
@@ -112,6 +113,7 @@ class App:
         self.tray.beep_start()
         self.endpointer.reset()
 
+        t0 = time.time()
         frames, reason = record_frames(
             mode,
             read_frame=lambda: self.mic.read_or_none(_READ_TIMEOUT),
@@ -122,6 +124,9 @@ class App:
             stall_iters=self._stall_iters,
             hold_release_iters=self._hold_release_iters,
         )
+        secs = len(frames) * self.cfg.frame_len / self.cfg.sample_rate
+        _log(f"[rec] mode={mode} reason={reason} frames={len(frames)} "
+             f"audio={secs:.1f}s wall={time.time() - t0:.1f}s")
         if reason == "stall":
             _log(f"[warn] microphone stalled during '{mode}' recording — restarting stream")
             self._restart_mic()
