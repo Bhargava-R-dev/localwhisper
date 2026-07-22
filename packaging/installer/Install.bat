@@ -21,6 +21,10 @@ if not exist "%SRC%\LocalWhisper.exe" (
     exit /b 1
 )
 
+echo Stopping any running LocalWhisper (upgrading an existing install) ...
+taskkill /IM LocalWhisper.exe /F >nul 2>&1
+timeout /t 1 /nobreak >nul
+
 echo Installing LocalWhisper to "%DEST%" ...
 if exist "%DEST%" rmdir /s /q "%DEST%"
 mkdir "%DEST%"
