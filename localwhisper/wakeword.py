@@ -2,11 +2,14 @@
 import numpy as np
 from openwakeword.model import Model
 
+from localwhisper.paths import ensure_wakeword_models
+
 
 class WakeWord:
     def __init__(self, config):
         self.name = config.wakeword_model
         self.threshold = config.wakeword_threshold
+        ensure_wakeword_models()   # source/pip mode: fetch models on first use
         self.model = Model(
             wakeword_models=[self.name],
             inference_framework="onnx",

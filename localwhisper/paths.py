@@ -20,3 +20,21 @@ def whisper_model_source(config) -> str:
         base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(sys.executable)))
         return os.path.join(base, "models", "whisper-small.en")
     return config.model_name
+
+
+def ensure_wakeword_models():
+    """Download openWakeWord's ONNX models if missing (source/pip mode only).
+
+    No-op in a frozen build, where the models are already bundled and the package
+    directory is read-only.
+    """
+    if is_frozen():
+        return
+    import openwakeword
+    base = os.path.join(
+        os.path.dirname(os.path.abspath(openwakeword.__file__)), "resources", "models"
+    )
+    if os.path.isfile(os.path.join(base, "hey_jarvis_v0.1.onnx")):
+        return
+    from openwakeword.utils import download_models
+    download_models()
