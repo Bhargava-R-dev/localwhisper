@@ -124,6 +124,7 @@ class App:
             stall_iters=self._stall_iters,
             hold_release_iters=self._hold_release_iters,
         )
+        self.hotkeys.release_hold()   # guarantee the trigger key is unblocked
         secs = len(frames) * self.cfg.frame_len / self.cfg.sample_rate
         _log(f"[rec] mode={mode} reason={reason} frames={len(frames)} "
              f"audio={secs:.1f}s wall={time.time() - t0:.1f}s")
