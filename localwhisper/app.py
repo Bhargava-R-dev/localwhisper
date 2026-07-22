@@ -20,6 +20,9 @@ from localwhisper.triggers import HotkeyListener, Event
 from localwhisper.inject import paste_at_cursor
 from localwhisper.tray import TrayIcon
 from localwhisper.overlay import Overlay
+from localwhisper.recording import record_frames
+
+_READ_TIMEOUT = 0.05   # seconds per record-loop iteration when no frame is ready
 
 
 def _frames_to_float(frames):
@@ -58,6 +61,9 @@ class App:
         fps = self.cfg.sample_rate / self.cfg.frame_len            # frames per second
         self._wake_cap = int(self.cfg.max_record_ms / 1000 * fps)   # hands-free safety cap
         self._hold_cap = int(self.cfg.max_hold_ms / 1000 * fps)     # push-to-talk runaway guard
+        # loop iterates every _READ_TIMEOUT seconds when idle of frames:
+        self._stall_iters = int(3.0 / _READ_TIMEOUT)               # ~3 s with no audio => stalled
+        self._hold_release_iters = 3                               # ~150 ms of "key up" ends a hold
 
     # ---- lifecycle ----
     def start(self):
@@ -104,38 +110,48 @@ class App:
         self.tray.set_state("listening")
         self.overlay.listening()
         self.tray.beep_start()
-        frames = []
         self.endpointer.reset()
 
-        while self._running and len(frames) < cap:
-            try:
-                frame = self.mic.read(timeout=0.5)
-            except queue.Empty:
-                # No audio this instant. In hold mode, still notice a key release.
-                if mode == "hold" and not self.hotkeys.hold_key_is_down():
-                    break
-                continue
-            frames.append(frame)
-
-            if mode == "hold" and not self.hotkeys.hold_key_is_down():
-                break
-            if mode == "toggle" and self._next_event() == Event.TOGGLE:
-                break
-            if mode == "wake":
-                if self.endpointer.update(frame.astype("float32") / 32768.0):
-                    break
+        frames, reason = record_frames(
+            mode,
+            read_frame=lambda: self.mic.read_or_none(_READ_TIMEOUT),
+            is_hold_down=self.hotkeys.hold_key_is_down,
+            pop_toggle=self._pop_toggle,
+            on_wake_frame=lambda f: self.endpointer.update(f.astype("float32") / 32768.0),
+            max_frames=cap,
+            stall_iters=self._stall_iters,
+            hold_release_iters=self._hold_release_iters,
+        )
+        if reason == "stall":
+            _log(f"[warn] microphone stalled during '{mode}' recording — restarting stream")
+            self._restart_mic()
 
         self.tray.beep_stop()
         self.tray.set_state("busy")
         self.overlay.busy()
         audio = _frames_to_float(frames)
-        text = self.engine.transcribe(audio)
+        text = self.engine.transcribe(audio) if len(frames) else ""
         if text:
             paste_at_cursor(text)
         self.mic.drain()
         self._flush_events()
         self.tray.set_state("idle")
         self.overlay.hide()
+
+    def _pop_toggle(self) -> bool:
+        """True (consuming the event) when the toggle hotkey was pressed again."""
+        return self._next_event() == Event.TOGGLE
+
+    def _restart_mic(self):
+        """Recover from a stalled stream by reopening it. Swallows failures."""
+        try:
+            self.mic.stop()
+        except Exception:
+            pass
+        try:
+            self.mic.start()
+        except Exception as exc:
+            _log("[error] mic restart failed: " + repr(exc))
 
     # ---- event helpers ----
     def _next_event(self):

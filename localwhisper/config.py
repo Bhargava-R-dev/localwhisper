@@ -28,7 +28,8 @@ class Config:
     energy_threshold: float = 0.01     # RMS above this = speech
 
     # Push-to-talk safety cap (hold/toggle end on the key/tap, not this — this is just a runaway guard)
-    max_hold_ms: int = 300000          # 5 minutes; hold and toggle can run this long
+    max_hold_ms: int = 120000          # 2 minutes; long enough for real dictation, avoids
+                                       # pathologically slow single-shot transcription of huge clips
 
     # Feedback
     beep: bool = True
