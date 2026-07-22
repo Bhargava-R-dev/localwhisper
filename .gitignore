@@ -8,3 +8,4 @@ build/
 dist/
 packaging/_model/
 *.spec
+dist_pypi/
