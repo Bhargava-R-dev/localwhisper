@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "localwhisper"
-version = "0.1.1"
+version = "0.1.2"
 description = "Local, offline push-to-talk and wake-word voice-to-text for Windows — types speech at your cursor."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,7 +30,7 @@ dependencies = [
     "Pillow>=10.0",
 ]
 
-[project.scripts]
+[project.gui-scripts]
 localwhisper = "run:main"
 
 [project.urls]

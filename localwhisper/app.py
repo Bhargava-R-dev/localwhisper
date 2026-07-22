@@ -33,6 +33,21 @@ def _frames_to_float(frames):
     return np.concatenate(frames).astype("float32") / 32768.0
 
 
+def _status(msg: str):
+    """Print to the console if one exists; always mirror to the log file.
+
+    A gui-scripts / pythonw launch has no console, so sys.stdout is None there and a
+    bare print() would crash on startup. This is safe in that case and still gives
+    normal console output when run from a real terminal (e.g. python -m localwhisper.app).
+    """
+    if sys.stdout is not None:
+        try:
+            print(msg)
+        except Exception:
+            pass
+    _log(msg)
+
+
 def _log(msg: str):
     """Append a line to the log file; never raises."""
     try:
@@ -68,13 +83,13 @@ class App:
 
     # ---- lifecycle ----
     def start(self):
-        print("LocalWhisper starting (loading model)...")
+        _status("LocalWhisper starting (loading model)...")
         self.engine = WhisperEngine(self.cfg)   # warm model load
         self.mic.start()
         self.hotkeys.start()
         self.tray.start()
         self.overlay.start()
-        print("Ready. Ctrl+B (hold), Alt+N (toggle), or say the wake word.")
+        _status("Ready. Ctrl+B (hold), Alt+N (toggle), or say the wake word.")
         self._loop()
 
     def quit(self):
@@ -188,7 +203,7 @@ class App:
         self.hotkeys.stop()
         self.mic.stop()
         self.tray.stop()
-        print("LocalWhisper stopped.")
+        _status("LocalWhisper stopped.")
 
 
 def main():
