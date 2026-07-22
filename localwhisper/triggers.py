@@ -10,18 +10,17 @@ class Event(Enum):
 
 
 class HotkeyListener:
-    """Global hotkeys with two Windows-specific behaviours the naive version got wrong:
+    """Global hotkeys with two Windows-specific behaviours the naive version got wrong.
 
-    1. **Event-driven release.** Polling ``is_pressed('ctrl+b')`` falsely reported the combo
-       as released mid-hold (~21 s), cutting recordings off. We instead flip a flag on the
-       hotkey press and clear it on the trigger key's actual key-up (auto-repeat never fakes
-       a key-up), so a hold lasts exactly until the finger lifts.
-
-    2. **Trigger-key suppression.** Because the trigger is a printable letter, its auto-repeat
-       would type ``bbbb...`` into the focused app during a hold. While a hold is active we
-       ``block_key`` the trigger so it never reaches other programs — our own hooks still see
-       it, so release detection keeps working. The block is always lifted: on release, via the
-       app after each recording, and on shutdown.
+    **Trigger-key suppression + release detection in ONE hook.** The trigger of the hold
+    combo is a printable letter, so its auto-repeat would type ``bbbb...`` into the focused
+    app during a hold. A previous attempt used ``block_key`` for suppression and a separate
+    ``on_release_key`` for the release — but the keyboard library drops a blocked event
+    *before* the non-blocking release hook ever runs, so the release was never seen and the
+    hold ran to the 2-minute cap. The fix is a single ``suppress=True`` hook whose callback
+    is guaranteed to run for every event of that key: it detects the key-up (release) AND
+    decides whether to block the key. It blocks the key only while a hold is active, so
+    normal typing of that letter is unaffected.
     """
 
     def __init__(self, config, event_queue: "queue.Queue[Event]"):
@@ -29,8 +28,7 @@ class HotkeyListener:
         self.toggle_hotkey = config.toggle_hotkey
         self.events = event_queue
         self._handles = []
-        self._release_hook = None
-        self._block_handle = None
+        self._trigger_hook = None
         self._hold_down = False
         self._trigger_key = self.hold_hotkey.split("+")[-1].strip()   # "b" in "ctrl+b"
 
@@ -41,39 +39,29 @@ class HotkeyListener:
         self._handles.append(
             keyboard.add_hotkey(self.toggle_hotkey, lambda: self.events.put(Event.TOGGLE))
         )
-        self._release_hook = keyboard.on_release_key(self._trigger_key, self._on_hold_release)
+        # Suppressing hook: its callback runs for EVERY event of the trigger key, so it both
+        # blocks auto-repeat during a hold and reliably detects the key-up (release).
+        self._trigger_hook = keyboard.hook_key(
+            self._trigger_key, self._on_trigger_event, suppress=True
+        )
 
     def _on_hold_start(self):
-        if self._hold_down:
-            return
         self._hold_down = True
-        # Suppress the trigger key so its auto-repeat can't type into the focused app.
-        try:
-            self._block_handle = keyboard.block_key(self._trigger_key)
-        except Exception:
-            self._block_handle = None
         self.events.put(Event.HOLD_START)
 
-    def _on_hold_release(self, _event):
-        self.release_hold()
+    def _on_trigger_event(self, event):
+        """Return True to let the key through, False to block it. Runs for down AND up."""
+        if event.event_type == keyboard.KEY_UP:
+            self._hold_down = False          # release detected -> recording will stop
+        return not self._hold_down           # block the trigger key only while a hold is active
 
     def hold_key_is_down(self) -> bool:
         """True from the hold-hotkey press until the trigger key is physically released."""
         return self._hold_down
 
     def release_hold(self):
-        """Clear the hold flag and unblock the trigger key. Idempotent; safe from any thread.
-
-        Called on the real key-up AND by the app after each hold recording, so the trigger key
-        can never stay blocked even if a key-up event is ever missed.
-        """
+        """Force the hold flag off (idempotent). Called by the app after each recording."""
         self._hold_down = False
-        if self._block_handle is not None:
-            try:
-                keyboard.unhook(self._block_handle)
-            except (KeyError, ValueError):
-                pass
-            self._block_handle = None
 
     def stop(self):
         self.release_hold()
@@ -83,9 +71,9 @@ class HotkeyListener:
             except (KeyError, ValueError):
                 pass
         self._handles.clear()
-        if self._release_hook is not None:
+        if self._trigger_hook is not None:
             try:
-                keyboard.unhook(self._release_hook)
+                keyboard.unhook(self._trigger_hook)
             except (KeyError, ValueError):
                 pass
-            self._release_hook = None
+            self._trigger_hook = None
