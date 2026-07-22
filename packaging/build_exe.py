@@ -64,6 +64,8 @@ def run_pyinstaller():
         "--collect-all", "sounddevice",     # bundles the PortAudio DLL
         "--collect-all", "av",              # PyAV/ffmpeg, imported by faster-whisper
         "--hidden-import", "pystray._win32",
+        "--hidden-import", "tkinter",       # overlay indicator (lazy-imported)
+        "--hidden-import", "_tkinter",
         "--add-data", f"{MODEL_STAGE}{add_data_sep}models/whisper-small.en",
         "--add-data", f"{os.path.join(ROOT, 'tests', 'fixtures', 'jfk.wav')}{add_data_sep}selftest",
         os.path.join(ROOT, "run.py"),

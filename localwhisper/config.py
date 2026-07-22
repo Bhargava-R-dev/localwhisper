@@ -22,13 +22,17 @@ class Config:
     wakeword_model: str = "hey_jarvis" # ready-made phrase; swap once custom "Hey PC" is trained
     wakeword_threshold: float = 0.5
 
-    # Endpointing (hands-free path only)
+    # Endpointing (hands-free / wake-word path only)
     endpoint_silence_ms: int = 1500    # stop after this much trailing silence
-    max_record_ms: int = 15000         # hard cap on a single utterance
+    max_record_ms: int = 15000         # safety cap for hands-free utterances (no key to release)
     energy_threshold: float = 0.01     # RMS above this = speech
+
+    # Push-to-talk safety cap (hold/toggle end on the key/tap, not this — this is just a runaway guard)
+    max_hold_ms: int = 300000          # 5 minutes; hold and toggle can run this long
 
     # Feedback
     beep: bool = True
+    show_overlay: bool = True          # Siri-style on-screen "listening" indicator
 
 
 def load_config() -> Config:
