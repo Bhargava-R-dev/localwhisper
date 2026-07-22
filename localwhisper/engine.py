@@ -2,12 +2,14 @@
 import numpy as np
 from faster_whisper import WhisperModel
 
+from localwhisper.paths import whisper_model_source
+
 
 class WhisperEngine:
     def __init__(self, config):
         self.language = config.language
         self.model = WhisperModel(
-            config.model_name,
+            whisper_model_source(config),
             device=config.device,
             compute_type=config.compute_type,
         )
