@@ -16,7 +16,7 @@ Powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (`small.e
 
 ## Install (easiest — no Python needed)
 
-1. Go to the [**Releases**](https://github.com/rallabandibhargava-dev/localwhisper/releases) page and download **`LocalWhisper-Setup.zip`**.
+1. Go to the [**Releases**](https://github.com/Bhargava-R-dev/localwhisper/releases) page and download **`LocalWhisper-Setup.zip`**.
 2. **Extract** the ZIP (right-click → Extract All). Keep the folder structure.
 3. Double-click **`Install.bat`** and approve the Windows admin prompt.
 
@@ -64,7 +64,7 @@ Behavior lives in [`localwhisper/config.py`](localwhisper/config.py) (edit + rer
 ## Build from source / run the tests
 
 ```powershell
-git clone https://github.com/rallabandibhargava-dev/localwhisper
+git clone https://github.com/Bhargava-R-dev/localwhisper
 cd localwhisper
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt

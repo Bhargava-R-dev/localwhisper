@@ -34,8 +34,8 @@ dependencies = [
 localwhisper = "run:main"
 
 [project.urls]
-Homepage = "https://github.com/rallabandibhargava-dev/localwhisper"
-Issues = "https://github.com/rallabandibhargava-dev/localwhisper/issues"
+Homepage = "https://github.com/Bhargava-R-dev/localwhisper"
+Issues = "https://github.com/Bhargava-R-dev/localwhisper/issues"
 
 [tool.setuptools]
 packages = ["localwhisper"]
