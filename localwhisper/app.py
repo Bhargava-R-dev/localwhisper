@@ -64,7 +64,7 @@ class App:
         self._hold_cap = int(self.cfg.max_hold_ms / 1000 * fps)     # push-to-talk runaway guard
         # loop iterates every _READ_TIMEOUT seconds when idle of frames:
         self._stall_iters = int(3.0 / _READ_TIMEOUT)               # ~3 s with no audio => stalled
-        self._hold_release_iters = 3                               # ~150 ms of "key up" ends a hold
+        self._hold_release_iters = 1                               # release is a reliable event -> stop at once
 
     # ---- lifecycle ----
     def start(self):
@@ -112,6 +112,7 @@ class App:
         self.overlay.listening()
         self.tray.beep_start()
         self.endpointer.reset()
+        self.mic.drain()          # start from fresh audio (no stale/pre-trigger backlog)
 
         t0 = time.time()
         frames, reason = record_frames(
@@ -135,6 +136,7 @@ class App:
         self.tray.beep_stop()
         self.tray.set_state("busy")
         self.overlay.busy()
+        time.sleep(0.05)          # let the overlay repaint "Working" before transcription hogs the CPU
         audio = _frames_to_float(frames)
         text = self.engine.transcribe(audio) if len(frames) else ""
         if text:
