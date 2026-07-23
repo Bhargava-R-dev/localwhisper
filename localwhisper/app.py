@@ -65,7 +65,8 @@ class App:
         self.cfg = load_config()
         self.events: "queue.Queue[Event]" = queue.Queue()
         self.mic = Microphone(self.cfg.sample_rate, self.cfg.frame_len)
-        self.wake = WakeWord(self.cfg)
+        # Wake word is opt-in: only load the always-on listener when explicitly enabled.
+        self.wake = WakeWord(self.cfg) if self.cfg.wakeword_enabled else None
         self.hotkeys = HotkeyListener(self.cfg, self.events)
         self.endpointer = Endpointer(
             self.cfg.sample_rate, self.cfg.endpoint_silence_ms,
@@ -89,7 +90,8 @@ class App:
         self.hotkeys.start()
         self.tray.start()
         self.overlay.start()
-        _status("Ready. Ctrl+B (hold), Alt+N (toggle), or say the wake word.")
+        wake_state = f"wake word '{self.cfg.wakeword_model}' ON" if self.wake else "wake word OFF (opt-in via config.json)"
+        _status(f"Ready. Ctrl+B (hold), Alt+N (toggle). {wake_state}.")
         self._loop()
 
     def quit(self):
@@ -118,7 +120,7 @@ class App:
             self._record("hold")
         elif evt == Event.TOGGLE:
             self._record("toggle")
-        elif self.wake.detect(frame):
+        elif self.wake is not None and self.wake.detect(frame):
             self._record("wake")
 
     def _record(self, mode: str):

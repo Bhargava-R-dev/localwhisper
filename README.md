@@ -2,13 +2,14 @@
 
 **Local, offline voice-to-text for Windows.** Speak, and it types wherever your cursor is — in any app. No cloud, no account, no data leaves your PC.
 
-Three ways to trigger it:
+Two hotkeys work out of the box:
 
 | Trigger | How | Best for |
 |---|---|---|
 | **Ctrl + B** | Hold and speak, release to insert | quick phrases (walkie-talkie) |
 | **Alt + N** | Tap to start, tap again to stop | longer dictation (hands free) |
-| **"Hey Jarvis"** | Say it, then speak | fully hands-free |
+
+There is also an optional **"Hey Jarvis" wake word** — but it is **OFF by default** (see [Optional wake word](#optional-wake-word) below), because an always-on listener can false-trigger and type transcribed audio into whatever window is focused.
 
 Powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (`small.en` model) and [openWakeWord](https://github.com/dscripka/openWakeWord).
 
@@ -47,15 +48,39 @@ On first run it downloads the `small.en` model (~240 MB) and the wake-word model
 
 ---
 
+## Optional wake word
+
+The **"Hey Jarvis" wake word is disabled by default.** It is an always-on microphone
+listener that types transcribed audio into the focused window, so a false trigger (from a
+meeting, a video, or background speech) can insert unwanted text. Hotkeys are safer because
+they only act when you press them.
+
+To enable it (no reinstall needed), create a file at
+**`%LOCALAPPDATA%\LocalWhisper\config.json`** with:
+
+```json
+{
+  "wakeword_enabled": true,
+  "wakeword_threshold": 0.8
+}
+```
+
+Then quit and relaunch LocalWhisper (or log out/in). Raise `wakeword_threshold` toward `0.9`
+if it still false-fires. To turn it back off, set `"wakeword_enabled": false` (or delete the
+file). The same file overrides any other setting in the table below.
+
 ## Tuning
 
-Behavior lives in [`localwhisper/config.py`](localwhisper/config.py) (edit + rerun from source, or rebuild):
+Every field in [`localwhisper/config.py`](localwhisper/config.py) can be overridden by the
+`config.json` file above — no rebuild required:
 
 | Setting | Default | What it does |
 |---|---|---|
 | `model_name` | `small.en` | Transcription model. `base.en` is faster, less accurate. |
+| `wakeword_enabled` | `false` | Turn the always-on wake word on/off. |
 | `wakeword_model` | `hey_jarvis` | Also: `alexa`, `hey_mycroft`, `hey_rhasspy`. |
-| `wakeword_threshold` | `0.5` | Lower = triggers more easily; raise if it false-fires. |
+| `wakeword_threshold` | `0.75` | Higher = fewer false triggers. |
+| `wakeword_patience` | `3` | Consecutive detections required to fire (rejects blips). |
 | `endpoint_silence_ms` | `1500` | Silence (ms) that ends a hands-free utterance. |
 | `energy_threshold` | `0.01` | Loudness that counts as speech. |
 
