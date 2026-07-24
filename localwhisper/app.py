@@ -49,13 +49,14 @@ def _status(msg: str):
 
 
 def _log(msg: str):
-    """Append a line to the log file; never raises."""
+    """Append a timestamped line to the log file; never raises."""
     try:
         base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
         folder = os.path.join(base, "LocalWhisper")
         os.makedirs(folder, exist_ok=True)
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
         with open(os.path.join(folder, "localwhisper.log"), "a", encoding="utf-8") as fh:
-            fh.write(msg + "\n")
+            fh.write(f"[{stamp}] {msg}\n")
     except Exception:
         pass
 
